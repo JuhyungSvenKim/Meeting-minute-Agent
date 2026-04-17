@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meeting Minute Agent</title>
+    <style>
+      body {font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f7f8fb;}
+      .card {max-width: 860px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,.08);} 
+      h1 {margin-top: 0;}
+      label {display: block; margin-top: 12px; font-weight: 600;}
+      input, button, textarea {width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #d0d4e4; border-radius: 8px; box-sizing: border-box;}
+      button {background: #1f6feb; color: white; font-weight: 700; cursor: pointer;}
+      button:hover {background: #1357c5;}
+      .error {margin-top: 12px; color: #b00020; background: #ffe9ee; border: 1px solid #ffc4d1; padding: 12px; border-radius: 8px;}
+      .result {margin-top: 18px; white-space: pre-wrap; background: #f6f9ff; border: 1px solid #d5e4ff; padding: 14px; border-radius: 8px;}
+      .muted {color: #6f768b; font-size: 14px;}
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>🎙️ 회의록 자동 생성기</h1>
+      <p class="muted">Whisper로 전사 + Gemini 3.1 Pro로 회의록 정리 (m4a 업로드)</p>
+
+      <form action="/upload" method="post" enctype="multipart/form-data">
+        <label>회의 제목</label>
+        <input type="text" name="meeting_title" placeholder="예: 4월 제품 전략 회의" value="{{ meeting_title }}" />
+
+        <label>언어 힌트</label>
+        <input type="text" name="language_hint" value="{{ language_hint }}" placeholder="ko" />
+
+        <label>음성 파일 (m4a/mp3/wav/mp4)</label>
+        <input type="file" name="file" accept=".m4a,.mp3,.wav,.mp4" required />
+
+        <button type="submit">회의록 생성</button>
+      </form>
+
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+
+      {% if transcript %}
+      <h3>전사 결과</h3>
+      <div class="result">{{ transcript }}</div>
+      {% endif %}
+
+      {% if result %}
+      <h3>회의록 결과</h3>
+      <div class="result">{{ result }}</div>
+      {% endif %}
+    </div>
+  </body>
+</html>
