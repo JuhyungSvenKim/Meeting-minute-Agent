@@ -27,16 +27,21 @@ export const meetingsApi = {
     http.patch<Meeting>(`/api/meetings/${id}`, payload).then((r) => r.data),
   remove: (id: string) => http.delete(`/api/meetings/${id}`).then((r) => r.data),
 
-  uploadAudio: (id: string, file: File, onProgress?: (pct: number) => void) => {
+  uploadAudio: (
+    id: string,
+    file: File,
+    opts?: { compress?: boolean; onProgress?: (pct: number) => void },
+  ) => {
     const fd = new FormData()
     fd.append('file', file)
+    fd.append('compress', String(opts?.compress ?? true))
     return http
       .post<AudioFile>(`/api/meetings/${id}/audio`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 0,
         onUploadProgress: (e) => {
-          if (e.total && onProgress) {
-            onProgress(Math.round((e.loaded / e.total) * 100))
+          if (e.total && opts?.onProgress) {
+            opts.onProgress(Math.round((e.loaded / e.total) * 100))
           }
         },
       })

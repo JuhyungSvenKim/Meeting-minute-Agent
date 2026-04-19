@@ -55,7 +55,10 @@ async function submit() {
     })
     uploading.value = true
     progress.value = 0
-    await meetingsApi.uploadAudio(created.id, file.value, (p) => (progress.value = p))
+    await meetingsApi.uploadAudio(created.id, file.value, {
+      compress: compressAudio.value,
+      onProgress: (p) => (progress.value = p),
+    })
     uploading.value = false
 
     await store.startProcess(created.id, pipeline.value, {

@@ -106,25 +106,27 @@ def run_pipeline(
         audio_bytes = _download_audio(storage_path)
         orig_mb = len(audio_bytes) / 1024 / 1024
 
-        if compress_audio and orig_mb >= 18:
-            if audio_prep.ffmpeg_available():
+        # Compression already happens at upload time; retry here only if the
+        # stored file is still too big for inline Gemini (shouldn't happen in
+        # the normal path, but keeps old records working).
+        if compress_audio and orig_mb >= 18 and audio_prep.ffmpeg_available():
+            set_progress(
+                meeting_id,
+                "downloading",
+                15,
+                f"Compressing {orig_mb:.0f} MB audio with ffmpeg…",
+            )
+            audio_bytes, mime_type, was_compressed = audio_prep.maybe_compress(
+                audio_bytes, filename
+            )
+            if was_compressed:
+                new_mb = len(audio_bytes) / 1024 / 1024
                 set_progress(
                     meeting_id,
                     "downloading",
-                    15,
-                    f"Compressing {orig_mb:.0f} MB audio with ffmpeg…",
+                    18,
+                    f"Compressed {orig_mb:.0f} MB → {new_mb:.1f} MB",
                 )
-                audio_bytes, mime_type, compressed = audio_prep.maybe_compress(
-                    audio_bytes, filename
-                )
-                if compressed:
-                    new_mb = len(audio_bytes) / 1024 / 1024
-                    set_progress(
-                        meeting_id,
-                        "downloading",
-                        18,
-                        f"Compressed {orig_mb:.0f} MB → {new_mb:.1f} MB",
-                    )
 
         size_mb = len(audio_bytes) / 1024 / 1024
         model_name = gemini_model or gemini_client.GEMINI_AUDIO_MODEL
