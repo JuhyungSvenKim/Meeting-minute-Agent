@@ -1,4 +1,23 @@
 export type PipelineType = 'gemini' | 'gemini_whisper'
+export type GeminiAudioModel =
+  | 'gemini-3.0-flash'
+  | 'gemini-3.0-pro'
+  | 'gemini-3.1-flash-lite'
+  | 'gemini-3.1-flash'
+  | 'gemini-3.1-pro'
+
+export const GEMINI_AUDIO_MODELS: {
+  value: GeminiAudioModel
+  label: string
+  sub: string
+  tag?: string
+}[] = [
+  { value: 'gemini-3.0-flash',      label: 'Gemini 3.0 Flash',      sub: '구세대 · 매우 빠름 · 저렴' },
+  { value: 'gemini-3.0-pro',        label: 'Gemini 3.0 Pro',        sub: '구세대 · 품질 우선' },
+  { value: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', sub: '최신 · 초경량 · 최저가' },
+  { value: 'gemini-3.1-flash',      label: 'Gemini 3.1 Flash',      sub: '최신 · 균형', tag: '권장' },
+  { value: 'gemini-3.1-pro',        label: 'Gemini 3.1 Pro',        sub: '최신 · 최고 품질 · 느림' },
+]
 export type LLMProvider = 'gemini' | 'openai' | 'anthropic'
 export type ExportFormat = 'pdf' | 'md' | 'txt'
 export type MeetingStatus =

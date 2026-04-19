@@ -43,8 +43,14 @@ def start_processing(
         meeting_id=meeting_id,
         pipeline_type=payload.pipeline_type,
         audio_record=audio.data[0],
+        gemini_model=payload.gemini_model,
+        compress_audio=payload.compress_audio,
     )
-    return {"meeting_id": meeting_id, "status": "processing"}
+    return {
+        "meeting_id": meeting_id,
+        "status": "processing",
+        "gemini_model": payload.gemini_model,
+    }
 
 
 @router.get("/{meeting_id}/process/status", response_model=ProcessStatus)

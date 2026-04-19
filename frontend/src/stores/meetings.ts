@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { meetingsApi } from '@/services/api'
-import type { Meeting, PipelineType } from '@/types'
+import type { GeminiAudioModel, Meeting, PipelineType } from '@/types'
 
 export const useMeetingsStore = defineStore('meetings', () => {
   const meetings = ref<Meeting[]>([])
@@ -37,8 +37,12 @@ export const useMeetingsStore = defineStore('meetings', () => {
     )
   }
 
-  async function startProcess(id: string, pipeline: PipelineType) {
-    await meetingsApi.startProcess(id, pipeline)
+  async function startProcess(
+    id: string,
+    pipeline: PipelineType,
+    opts?: { gemini_model?: GeminiAudioModel; compress_audio?: boolean },
+  ) {
+    await meetingsApi.startProcess(id, pipeline, opts)
     patchLocal(id, { status: 'processing', pipeline_type: pipeline })
   }
 

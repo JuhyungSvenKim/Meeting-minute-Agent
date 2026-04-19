@@ -2,6 +2,7 @@ import axios from 'axios'
 import type {
   AudioFile,
   ExportFormat,
+  GeminiAudioModel,
   LLMProvider,
   Meeting,
   PipelineType,
@@ -42,9 +43,17 @@ export const meetingsApi = {
       .then((r) => r.data)
   },
 
-  startProcess: (id: string, pipeline_type: PipelineType) =>
+  startProcess: (
+    id: string,
+    pipeline_type: PipelineType,
+    opts?: { gemini_model?: GeminiAudioModel; compress_audio?: boolean },
+  ) =>
     http
-      .post(`/api/meetings/${id}/process`, { pipeline_type })
+      .post(`/api/meetings/${id}/process`, {
+        pipeline_type,
+        gemini_model: opts?.gemini_model,
+        compress_audio: opts?.compress_audio ?? true,
+      })
       .then((r) => r.data),
 
   status: (id: string) =>

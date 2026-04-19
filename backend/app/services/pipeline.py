@@ -8,8 +8,7 @@ from ..config import get_settings
 from ..db import get_supabase
 from ..models import PipelineType
 from ..state import set_progress
-from . import gemini_client, whisper_client
-from .gemini_client import GEMINI_AUDIO_MODEL as GEMINI_AUDIO_MODEL_NAME
+from . import audio_prep, gemini_client, whisper_client
 from .merge import merge_gemini_with_whisper
 
 
@@ -91,7 +90,11 @@ def _save_summary_from_pipeline(meeting_id: str, parsed: dict[str, Any]) -> None
 
 
 def run_pipeline(
-    meeting_id: str, pipeline_type: PipelineType, audio_record: dict[str, Any]
+    meeting_id: str,
+    pipeline_type: PipelineType,
+    audio_record: dict[str, Any],
+    gemini_model: str | None = None,
+    compress_audio: bool = True,
 ) -> None:
     sb = get_supabase()
     storage_path = audio_record["storage_path"]
@@ -101,30 +104,52 @@ def run_pipeline(
     try:
         set_progress(meeting_id, "downloading", 5, "Downloading audio")
         audio_bytes = _download_audio(storage_path)
+        orig_mb = len(audio_bytes) / 1024 / 1024
+
+        if compress_audio and orig_mb >= 18:
+            if audio_prep.ffmpeg_available():
+                set_progress(
+                    meeting_id,
+                    "downloading",
+                    15,
+                    f"Compressing {orig_mb:.0f} MB audio with ffmpeg…",
+                )
+                audio_bytes, mime_type, compressed = audio_prep.maybe_compress(
+                    audio_bytes, filename
+                )
+                if compressed:
+                    new_mb = len(audio_bytes) / 1024 / 1024
+                    set_progress(
+                        meeting_id,
+                        "downloading",
+                        18,
+                        f"Compressed {orig_mb:.0f} MB → {new_mb:.1f} MB",
+                    )
 
         size_mb = len(audio_bytes) / 1024 / 1024
+        model_name = gemini_model or gemini_client.GEMINI_AUDIO_MODEL
         if size_mb > 18:
             set_progress(
                 meeting_id,
                 "transcribing",
-                20,
+                22,
                 f"Uploading {size_mb:.0f} MB to Gemini Files API…",
             )
         set_progress(
             meeting_id,
             "transcribing",
             30,
-            f"Transcribing with Gemini ({GEMINI_AUDIO_MODEL_NAME})",
+            f"Transcribing with {model_name}",
         )
-        parsed = gemini_client.transcribe_audio(audio_bytes, mime_type)
-        provider = "gemini"
+        parsed = gemini_client.transcribe_audio(audio_bytes, mime_type, model=model_name)
+        provider = f"gemini ({model_name})"
 
         if pipeline_type == "gemini_whisper":
             set_progress(meeting_id, "transcribing", 60, "Transcribing with Whisper")
             whisper_raw = whisper_client.transcribe_audio(audio_bytes, filename)
             set_progress(meeting_id, "merging", 75, "Merging Gemini diarization + Whisper STT")
             parsed = merge_gemini_with_whisper(parsed, whisper_raw)
-            provider = "gemini+whisper"
+            provider = f"gemini+whisper ({model_name})"
 
         set_progress(meeting_id, "saving", 90, "Saving transcript")
         _save_transcript(meeting_id, provider, parsed)

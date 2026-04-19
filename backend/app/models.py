@@ -6,6 +6,13 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 
 PipelineType = Literal["gemini", "gemini_whisper"]
+GeminiAudioModel = Literal[
+    "gemini-3.0-flash",
+    "gemini-3.0-pro",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-flash",
+    "gemini-3.1-pro",
+]
 MeetingStatus = Literal[
     "created", "uploaded", "processing", "transcribed", "summarized", "error"
 ]
@@ -87,6 +94,8 @@ class SpeakerNameUpdate(BaseModel):
 # ----------------------------- Pipeline -----------------------------
 class ProcessRequest(BaseModel):
     pipeline_type: PipelineType = "gemini"
+    gemini_model: GeminiAudioModel = "gemini-3.1-flash"
+    compress_audio: bool = True  # auto-compress if ffmpeg is available
 
 
 class ProcessStatus(BaseModel):

@@ -17,10 +17,17 @@ from google.genai import types
 from ..config import get_settings
 from .prompts import GEMINI_TRANSCRIBE_PROMPT
 
-# Audio transcription / diarization model.
-# Flash handles audio/video/image + is much faster on large files.
+# Default model; frontend can override per-request.
 GEMINI_AUDIO_MODEL = "gemini-3.1-flash"
 GEMINI_TEXT_MODEL = "gemini-3.1-flash"
+
+AVAILABLE_AUDIO_MODELS = [
+    "gemini-3.0-flash",
+    "gemini-3.0-pro",
+    "gemini-3.1-flash-lite",
+    "gemini-3.1-flash",
+    "gemini-3.1-pro",
+]
 
 # Gemini's inline request body is ~20 MB; go through the Files API beyond that.
 INLINE_LIMIT_BYTES = 18 * 1024 * 1024
@@ -70,12 +77,17 @@ def _upload_and_wait(client: genai.Client, audio_bytes: bytes, mime_type: str):
         time.sleep(2)
 
 
-def transcribe_audio(audio_bytes: bytes, mime_type: str) -> dict[str, Any]:
+def transcribe_audio(
+    audio_bytes: bytes,
+    mime_type: str,
+    model: str | None = None,
+) -> dict[str, Any]:
     """Send audio to Gemini and parse the JSON response.
 
     Uses inline bytes for small files and the Files API for large ones.
     """
     client = _client()
+    model_name = model or GEMINI_AUDIO_MODEL
 
     if len(audio_bytes) <= INLINE_LIMIT_BYTES:
         audio_part: Any = types.Part.from_bytes(data=audio_bytes, mime_type=mime_type)
@@ -83,7 +95,7 @@ def transcribe_audio(audio_bytes: bytes, mime_type: str) -> dict[str, Any]:
         audio_part = _upload_and_wait(client, audio_bytes, mime_type)
 
     response = client.models.generate_content(
-        model=GEMINI_AUDIO_MODEL,
+        model=model_name,
         contents=[audio_part, GEMINI_TRANSCRIBE_PROMPT],
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -94,10 +106,10 @@ def transcribe_audio(audio_bytes: bytes, mime_type: str) -> dict[str, Any]:
     return _parse_json(text)
 
 
-def generate_text(system: str, user: str) -> str:
+def generate_text(system: str, user: str, model: str | None = None) -> str:
     client = _client()
     response = client.models.generate_content(
-        model=GEMINI_TEXT_MODEL,
+        model=model or GEMINI_TEXT_MODEL,
         contents=[user],
         config=types.GenerateContentConfig(
             temperature=0.3,
