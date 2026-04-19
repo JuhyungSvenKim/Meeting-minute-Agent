@@ -9,6 +9,7 @@ from ..db import get_supabase
 from ..models import PipelineType
 from ..state import set_progress
 from . import gemini_client, whisper_client
+from .gemini_client import GEMINI_AUDIO_MODEL as GEMINI_AUDIO_MODEL_NAME
 from .merge import merge_gemini_with_whisper
 
 
@@ -101,7 +102,20 @@ def run_pipeline(
         set_progress(meeting_id, "downloading", 5, "Downloading audio")
         audio_bytes = _download_audio(storage_path)
 
-        set_progress(meeting_id, "transcribing", 30, "Transcribing with Gemini 3.1 Pro")
+        size_mb = len(audio_bytes) / 1024 / 1024
+        if size_mb > 18:
+            set_progress(
+                meeting_id,
+                "transcribing",
+                20,
+                f"Uploading {size_mb:.0f} MB to Gemini Files API…",
+            )
+        set_progress(
+            meeting_id,
+            "transcribing",
+            30,
+            f"Transcribing with Gemini ({GEMINI_AUDIO_MODEL_NAME})",
+        )
         parsed = gemini_client.transcribe_audio(audio_bytes, mime_type)
         provider = "gemini"
 
